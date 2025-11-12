@@ -1,1 +1,49 @@
-  
+# =====================================================
+# .HTACCESS - URL Rewriting
+# =====================================================
+# Mô tả: Redirect tất cả request về index.php
+# =====================================================
+
+# Bật Rewrite Engine
+RewriteEngine On
+
+# Không redirect nếu là file hoặc thư mục thực
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Redirect tất cả request về index.php
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Bảo mật: Chặn truy cập trực tiếp vào file .htaccess
+<Files .htaccess>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Bảo mật: Chặn hiển thị directory listing
+Options -Indexes
+
+# Cho phép override
+<IfModule mod_negotiation.c>
+    Options -MultiViews
+</IfModule>
+
+# Set UTF-8 encoding
+AddDefaultCharset UTF-8
+
+# Cache static files
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
+
+# Compress files
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript
+</IfModule>
+
