@@ -506,5 +506,75 @@ class Product extends BaseModel {
             return false;
         }
     }
+    
+    /**
+     * Lấy sản phẩm bán chạy nhất với thông tin doanh thu
+     * @param int $limit - Số lượng sản phẩm
+     * @return array - Mảng sản phẩm với total_sold, total_revenue
+     */
+    public function getBestSellingProducts($limit = 10) {
+        try {
+            $sql = "SELECT 
+                        p.id,
+                        p.name,
+                        p.image,
+                        p.price,
+                        p.stock,
+                        p.sold as total_sold,
+                        (p.sold * p.price) as total_revenue,
+                        c.name as category_name
+                    FROM {$this->table} p
+                    LEFT JOIN categories c ON p.category_id = c.id
+                    WHERE p.status = 'active'
+                    ORDER BY p.sold DESC
+                    LIMIT :limit";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("Error in Product::getBestSellingProducts(): " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Lấy sản phẩm sắp hết hàng
+     * @param int $threshold - Ngưỡng tồn kho (mặc định 10)
+     * @param int $limit - Số lượng sản phẩm tối đa
+     * @return array
+     */
+    public function getLowStockProducts($threshold = 10, $limit = 10) {
+        try {
+            $sql = "SELECT 
+                        p.id,
+                        p.name,
+                        p.image,
+                        p.stock,
+                        p.sold,
+                        p.price,
+                        c.name as category_name
+                    FROM {$this->table} p
+                    LEFT JOIN categories c ON p.category_id = c.id
+                    WHERE p.stock <= :threshold
+                    AND p.status = 'active'
+                    ORDER BY p.stock ASC
+                    LIMIT :limit";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':threshold', (int)$threshold, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("Error in Product::getLowStockProducts(): " . $e->getMessage());
+            return [];
+        }
+    }
 }
 

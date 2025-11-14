@@ -9,6 +9,191 @@
  * =====================================================
  */
 
+class FileUpload {
+    
+    private $allowedTypes = [
+        'images' => ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp']
+    ];
+    
+    private $maxSize = 5242880; // 5MB
+    
+    /**
+     * Upload file
+     */
+    public function upload($file, $folder = 'products', $resize = true) {
+        // Kiểm tra lỗi upload
+        if (!isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
+            return [
+                'success' => false,
+                'message' => 'Lỗi upload file',
+                'path' => null
+            ];
+        }
+        
+        // Validate file
+        $validation = $this->validateFile($file);
+        if (!$validation['valid']) {
+            return [
+                'success' => false,
+                'message' => $validation['message'],
+                'path' => null
+            ];
+        }
+        
+        // Tạo tên file unique
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $filename = uniqid() . '_' . time() . '.' . $extension;
+        
+        // Đường dẫn lưu file
+        $uploadDir = __DIR__ . '/../public/images/' . $folder;
+        if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        
+        $filepath = $uploadDir . '/' . $filename;
+        
+        // Di chuyển file
+        if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+            return [
+                'success' => false,
+                'message' => 'Không thể lưu file',
+                'path' => null
+            ];
+        }
+        
+        // Resize ảnh nếu cần
+        if ($resize && $this->isImage($filepath)) {
+            $this->resizeImage($filepath, 1200, 1200);
+        }
+        
+        // Trả về đường dẫn relative
+        $relativePath = 'public/images/' . $folder . '/' . $filename;
+        
+        return [
+            'success' => true,
+            'message' => 'Upload thành công',
+            'path' => $relativePath
+        ];
+    }
+    
+    /**
+     * Validate file upload
+     */
+    private function validateFile($file) {
+        // Kiểm tra kích thước
+        if ($file['size'] > $this->maxSize) {
+            return [
+                'valid' => false,
+                'message' => 'File quá lớn. Tối đa ' . ($this->maxSize / 1024 / 1024) . 'MB'
+            ];
+        }
+        
+        // Kiểm tra loại file
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+        
+        if (!in_array($mimeType, $this->allowedTypes['images'])) {
+            return [
+                'valid' => false,
+                'message' => 'Chỉ chấp nhận file ảnh (JPG, PNG, GIF, WebP)'
+            ];
+        }
+        
+        return ['valid' => true];
+    }
+    
+    /**
+     * Resize image
+     */
+    private function resizeImage($filepath, $maxWidth = 1200, $maxHeight = 1200) {
+        if (!file_exists($filepath)) {
+            return false;
+        }
+        
+        list($width, $height, $type) = getimagesize($filepath);
+        
+        // Nếu ảnh nhỏ hơn kích thước tối đa thì không cần resize
+        if ($width <= $maxWidth && $height <= $maxHeight) {
+            return true;
+        }
+        
+        // Tính tỷ lệ resize
+        $ratio = min($maxWidth / $width, $maxHeight / $height);
+        $newWidth = (int)($width * $ratio);
+        $newHeight = (int)($height * $ratio);
+        
+        // Tạo ảnh từ file gốc
+        switch ($type) {
+            case IMAGETYPE_JPEG:
+                $source = imagecreatefromjpeg($filepath);
+                break;
+            case IMAGETYPE_PNG:
+                $source = imagecreatefrompng($filepath);
+                break;
+            case IMAGETYPE_GIF:
+                $source = imagecreatefromgif($filepath);
+                break;
+            case IMAGETYPE_WEBP:
+                $source = imagecreatefromwebp($filepath);
+                break;
+            default:
+                return false;
+        }
+        
+        // Tạo ảnh mới
+        $destination = imagecreatetruecolor($newWidth, $newHeight);
+        
+        // Giữ transparency cho PNG và GIF
+        if ($type == IMAGETYPE_PNG || $type == IMAGETYPE_GIF) {
+            imagealphablending($destination, false);
+            imagesavealpha($destination, true);
+            $transparent = imagecolorallocatealpha($destination, 255, 255, 255, 127);
+            imagefilledrectangle($destination, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+        
+        // Copy và resize
+        imagecopyresampled($destination, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+        
+        // Lưu ảnh
+        switch ($type) {
+            case IMAGETYPE_JPEG:
+                $result = imagejpeg($destination, $filepath, 90);
+                break;
+            case IMAGETYPE_PNG:
+                $result = imagepng($destination, $filepath, 9);
+                break;
+            case IMAGETYPE_GIF:
+                $result = imagegif($destination, $filepath);
+                break;
+            case IMAGETYPE_WEBP:
+                $result = imagewebp($destination, $filepath, 90);
+                break;
+            default:
+                $result = false;
+        }
+        
+        imagedestroy($source);
+        imagedestroy($destination);
+        
+        return $result;
+    }
+    
+    /**
+     * Check if file is image
+     */
+    private function isImage($filepath) {
+        if (!file_exists($filepath)) {
+            return false;
+        }
+        
+        $imageTypes = [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_WEBP];
+        $imageInfo = getimagesize($filepath);
+        
+        return $imageInfo !== false && in_array($imageInfo[2], $imageTypes);
+    }
+}
+
 /**
  * Upload file lên server
  * @param array $file - $_FILES['fieldname']

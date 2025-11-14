@@ -34,7 +34,7 @@ $bestSellingProducts = $bestSellingProducts ?? [];
                 </div>
             </div>
             <div class="col-lg-6 text-center">
-                <img src="<?= base_url('public/images/hero-banner.png') ?>" alt="Hero Banner" class="img-fluid rounded"
+                <img src="<?= base_url('banner.jpg') ?>" alt="Hero Banner" class="img-fluid rounded"
                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4NCiAgICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjhmOWZhIi8+DQogICAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+Tm8gSW1hZ2U8L3RleHQ+DQo8L3N2Zz4='">
             </div>
         </div>
@@ -208,7 +208,7 @@ $bestSellingProducts = $bestSellingProducts ?? [];
 
 <style>
     .bg-gradient-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg,rgb(77, 84, 114) 0%,rgb(99, 56, 143) 100%);
     }
 
     .category-card {

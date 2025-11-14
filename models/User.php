@@ -88,6 +88,31 @@ class User extends BaseModel {
     }
     
     /**
+     * Đếm tổng số người dùng
+     * @param string|null $role
+     * @return int
+     */
+    public function countAll($role = null)
+    {
+        try {
+            $sql = "SELECT COUNT(*) as total FROM {$this->table}";
+            $params = [];
+
+            if ($role !== null) {
+                $sql .= " WHERE role = :role";
+                $params['role'] = $role;
+            }
+
+            $result = $this->queryOne($sql, $params);
+            return $result ? (int) $result['total'] : 0;
+
+        } catch (Exception $e) {
+            error_log("Error in User::countAll(): " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    /**
      * Xóa user
      * @param int $id
      * @return bool
@@ -107,12 +132,27 @@ class User extends BaseModel {
     }
     
     /**
-     * Đếm tổng số users
-     * @param array|null $conditions
-     * @return int
+     * Lấy danh sách người dùng mới nhất
+     * @param int $limit - Số lượng users cần lấy
+     * @return array
      */
-    public function countAll($conditions = null) {
-        return $this->count($conditions);
+    public function getRecent($limit = 5) {
+        try {
+            $sql = "SELECT id, username, email, role, created_at 
+                    FROM {$this->table} 
+                    ORDER BY created_at DESC 
+                    LIMIT :limit";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error in User::getRecent(): " . $e->getMessage());
+            return [];
+        }
     }
     
     /**

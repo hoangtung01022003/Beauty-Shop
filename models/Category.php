@@ -82,7 +82,7 @@ class Category extends BaseModel
 
     /**
      * Tạo danh mục mới
-     * @param array $data - ['name', 'description', 'status']
+     * @param array $data - ['name', 'description', 'image', 'status']
      * @return int|false - ID của danh mục vừa tạo hoặc false
      */
     public function create($data)
@@ -90,19 +90,23 @@ class Category extends BaseModel
         try {
             // Validate dữ liệu
             if (empty($data['name'])) {
-                error_log("Category name is required");
                 return false;
             }
 
-            // Chuẩn bị dữ liệu
+            // Chuẩn bị dữ liệu với timestamp
             $insertData = [
                 'name' => trim($data['name']),
-                'description' => isset($data['description']) ? trim($data['description']) : null,
-                'status' => isset($data['status']) ? $data['status'] : 'active'
+                'description' => isset($data['description']) ? trim($data['description']) : '',
+                'image' => isset($data['image']) ? $data['image'] : null,
+                'status' => isset($data['status']) ? $data['status'] : 'active',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
             ];
 
             // Gọi phương thức create từ BaseModel
-            return parent::create($insertData);
+            $result = parent::create($insertData);
+            
+            return $result;
 
         } catch (Exception $e) {
             error_log("Error in Category::create(): " . $e->getMessage());
@@ -113,7 +117,7 @@ class Category extends BaseModel
     /**
      * Cập nhật danh mục
      * @param int $id
-     * @param array $data - ['name', 'description', 'status']
+     * @param array $data - ['name', 'description', 'image', 'status']
      * @return bool
      */
     public function update($id, $data)
@@ -121,12 +125,13 @@ class Category extends BaseModel
         try {
             // Kiểm tra danh mục có tồn tại không
             if (!$this->exists($id)) {
-                error_log("Category ID {$id} not found");
                 return false;
             }
 
             // Chuẩn bị dữ liệu cập nhật
-            $updateData = [];
+            $updateData = [
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
 
             if (isset($data['name'])) {
                 $updateData['name'] = trim($data['name']);
@@ -136,17 +141,18 @@ class Category extends BaseModel
                 $updateData['description'] = trim($data['description']);
             }
 
+            if (isset($data['image'])) {
+                $updateData['image'] = $data['image'];
+            }
+
             if (isset($data['status'])) {
                 $updateData['status'] = $data['status'];
             }
 
-            // Kiểm tra có dữ liệu cần update không
-            if (empty($updateData)) {
-                return true; // Không có gì để update
-            }
-
             // Gọi phương thức update từ BaseModel
-            return parent::update($id, $updateData);
+            $result = parent::update($id, $updateData);
+            
+            return $result;
 
         } catch (Exception $e) {
             error_log("Error in Category::update(): " . $e->getMessage());
@@ -199,6 +205,31 @@ class Category extends BaseModel
 
         } catch (Exception $e) {
             error_log("Error in Category::countProducts(): " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Đếm tổng số danh mục
+     * @param string|null $status
+     * @return int
+     */
+    public function countAll($status = null)
+    {
+        try {
+            $sql = "SELECT COUNT(*) as total FROM {$this->table}";
+            $params = [];
+
+            if ($status !== null) {
+                $sql .= " WHERE status = :status";
+                $params['status'] = $status;
+            }
+
+            $result = $this->queryOne($sql, $params);
+            return $result ? (int) $result['total'] : 0;
+
+        } catch (Exception $e) {
+            error_log("Error in Category::countAll(): " . $e->getMessage());
             return 0;
         }
     }

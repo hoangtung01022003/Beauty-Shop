@@ -96,15 +96,15 @@ Router::get('admin/dashboard', 'DashboardController@index');
 // Admin - Users
 Router::get('admin/users', 'UserAdminController@index');
 Router::get('admin/users/edit/{id}', 'UserAdminController@edit');
-Router::post('admin/users/update/{id}', 'UserAdminController@update');
+Router::post('admin/users/edit/{id}', 'UserAdminController@edit');  // Sửa: POST cùng đường dẫn với GET
 Router::post('admin/users/delete/{id}', 'UserAdminController@delete');
 
 // Admin - Categories
 Router::get('admin/categories', 'CategoryAdminController@index');
 Router::get('admin/categories/add', 'CategoryAdminController@add');
-Router::post('admin/categories/add', 'CategoryAdminController@store');
+Router::post('admin/categories/add', 'CategoryAdminController@add');  // Sửa: gọi method add
 Router::get('admin/categories/edit/{id}', 'CategoryAdminController@edit');
-Router::post('admin/categories/update/{id}', 'CategoryAdminController@update');
+Router::post('admin/categories/edit/{id}', 'CategoryAdminController@edit');  // Sửa: gọi method edit
 Router::post('admin/categories/delete/{id}', 'CategoryAdminController@delete');
 
 // Admin - Products
@@ -114,12 +114,17 @@ Router::post('admin/products/create', 'ProductAdminController@create');
 Router::get('admin/products/edit/{id}', 'ProductAdminController@edit');
 Router::post('admin/products/edit/{id}', 'ProductAdminController@edit');
 Router::post('admin/products/delete/{id}', 'ProductAdminController@delete');
-Router::get('admin/products/view/{id}', 'ProductAdminController@view');
+Router::get('admin/products/view/{id}', 'ProductAdminController@viewDetail');
 
 // Admin - Orders
 Router::get('admin/orders', 'OrderAdminController@index');
-Router::get('admin/orders/{id}', 'OrderAdminController@detail');
-Router::post('admin/orders/update-status/{id}', 'OrderAdminController@updateStatus');
+Router::get('admin/orders/detail/{id}', 'OrderAdminController@detail');
+Router::get('admin/orders/edit/{id}', 'OrderAdminController@edit');
+Router::post('admin/orders/edit/{id}', 'OrderAdminController@update');
+Router::post('admin/orders/update/{id}', 'OrderAdminController@update');
+Router::post('admin/orders/delete/{id}', 'OrderAdminController@delete');
+Router::post('admin/orders/updateStatus/{id}', 'OrderAdminController@updateStatus');
+Router::get('admin/orders/export', 'OrderAdminController@export');
 
 // =====================================================
 // 4. DISPATCH REQUEST

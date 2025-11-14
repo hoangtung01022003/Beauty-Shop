@@ -18,8 +18,6 @@ class CategoryAdminController extends BaseController {
     private $categoryModel;
     
     public function __construct() {
-        parent::__construct();
-        
         // Kiểm tra admin
         requireAdmin();
         
@@ -72,13 +70,12 @@ class CategoryAdminController extends BaseController {
      */
     public function add() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Xử lý POST - Thêm danh mục
             try {
                 // Validate dữ liệu
                 $errors = $this->validateCategoryData($_POST);
                 
                 if (!empty($errors)) {
-                    $this->setFlashMessage('error', 'Vui lòng kiểm tra lại dữ liệu nhập vào');
+                    $this->setFlashMessage('error', 'Dữ liệu không hợp lệ: ' . implode(', ', $errors));
                     $_SESSION['errors'] = $errors;
                     $_SESSION['old_data'] = $_POST;
                     redirect(base_url('admin/categories/add'));
@@ -94,30 +91,37 @@ class CategoryAdminController extends BaseController {
                     if ($uploadResult['success']) {
                         $imagePath = $uploadResult['path'];
                     } else {
-                        $this->setFlashMessage('warning', 'Lỗi upload hình ảnh: ' . $uploadResult['message']);
+                        $this->setFlashMessage('error', 'Lỗi upload hình ảnh: ' . $uploadResult['message']);
+                        $_SESSION['old_data'] = $_POST;
+                        redirect(base_url('admin/categories/add'));
+                        return;
                     }
                 }
                 
                 // Chuẩn bị dữ liệu
                 $data = [
-                    'name' => sanitize($_POST['name']),
-                    'description' => sanitize($_POST['description'] ?? ''),
-                    'image' => $imagePath
+                    'name' => trim($_POST['name']),
+                    'description' => isset($_POST['description']) ? trim($_POST['description']) : '',
+                    'image' => $imagePath,
+                    'status' => 'active'
                 ];
                 
                 // Tạo danh mục
                 $categoryId = $this->categoryModel->create($data);
                 
                 if ($categoryId) {
-                    $this->setFlashMessage('success', 'Thêm danh mục thành công!');
+                    $this->setFlashMessage('success', 'Thêm danh mục "' . $data['name'] . '" thành công!');
                     redirect(base_url('admin/categories'));
                 } else {
-                    $this->setFlashMessage('error', 'Không thể thêm danh mục');
+                    $this->setFlashMessage('error', 'Không thể thêm danh mục. Vui lòng kiểm tra dữ liệu và thử lại.');
+                    $_SESSION['old_data'] = $_POST;
                     redirect(base_url('admin/categories/add'));
                 }
                 
             } catch (Exception $e) {
-                $this->setFlashMessage('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+                error_log("Error in CategoryAdminController::add(): " . $e->getMessage());
+                $this->setFlashMessage('error', 'Có lỗi hệ thống xảy ra: ' . $e->getMessage());
+                $_SESSION['old_data'] = $_POST;
                 redirect(base_url('admin/categories/add'));
             }
             
@@ -271,16 +275,27 @@ class CategoryAdminController extends BaseController {
         // Validate name
         if (empty($data['name'])) {
             $errors['name'] = 'Tên danh mục không được để trống';
-        } elseif (strlen($data['name']) < 2) {
+        } elseif (strlen(trim($data['name'])) < 2) {
             $errors['name'] = 'Tên danh mục phải có ít nhất 2 ký tự';
-        } elseif (strlen($data['name']) > 100) {
+        } elseif (strlen(trim($data['name'])) > 100) {
             $errors['name'] = 'Tên danh mục không được quá 100 ký tự';
         } else {
             // Kiểm tra trùng tên
-            $existing = $this->categoryModel->findByName($data['name']);
-            if ($existing && (!$categoryId || $existing['id'] != $categoryId)) {
-                $errors['name'] = 'Tên danh mục đã tồn tại';
+            try {
+                $nameExists = $this->categoryModel->isNameExists(trim($data['name']), $categoryId);
+                
+                if ($nameExists) {
+                    $errors['name'] = 'Tên danh mục đã tồn tại';
+                }
+            } catch (Exception $e) {
+                error_log("Error checking name exists: " . $e->getMessage());
+                // Không thêm lỗi validation nếu không thể kiểm tra được
             }
+        }
+        
+        // Validate description (optional)
+        if (!empty($data['description']) && strlen(trim($data['description'])) > 1000) {
+            $errors['description'] = 'Mô tả không được quá 1000 ký tự';
         }
         
         return $errors;

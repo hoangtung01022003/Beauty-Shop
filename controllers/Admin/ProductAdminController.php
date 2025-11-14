@@ -21,8 +21,6 @@ class ProductAdminController extends BaseController {
     private $categoryModel;
     
     public function __construct() {
-        parent::__construct();
-        
         // Kiểm tra admin
         requireAdmin();
         
@@ -143,7 +141,7 @@ class ProductAdminController extends BaseController {
             
         } else {
             // Hiển thị form thêm mới
-            $categories = $this->categoryModel->getAll('active');
+            $categories = $this->categoryModel->getAllWithProductCount('active');
             
             $data = [
                 'categories' => $categories,
@@ -236,7 +234,7 @@ class ProductAdminController extends BaseController {
                 return;
             }
             
-            $categories = $this->categoryModel->getAll('active');
+            $categories = $this->categoryModel->getAllWithProductCount('active');
             
             $data = [
                 'product' => $product,
@@ -253,12 +251,36 @@ class ProductAdminController extends BaseController {
      * Xóa sản phẩm
      */
     public function delete($id) {
+        // Debug logging
+        error_log("=== DELETE PRODUCT CALLED ===");
+        error_log("Product ID: " . $id);
+        error_log("Request Method: " . $_SERVER['REQUEST_METHOD']);
+        
         try {
+            // Chỉ nhận POST request
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                error_log("ERROR: Not POST method");
+                $this->setFlashMessage('error', 'Invalid request method');
+                redirect(base_url('admin/products'));
+                return;
+            }
+            
             // Kiểm tra sản phẩm tồn tại
             $product = $this->productModel->getById($id);
             
+            error_log("Product found: " . ($product ? 'Yes' : 'No'));
+            
             if (!$product) {
+                error_log("ERROR: Product not found");
                 $this->setFlashMessage('error', 'Không tìm thấy sản phẩm');
+                redirect(base_url('admin/products'));
+                return;
+            }
+            
+            // Kiểm tra sản phẩm có trong order_items không (foreign key constraint)
+            if (!$this->canDeleteProduct($id)) {
+                error_log("ERROR: Product is referenced in orders");
+                $this->setFlashMessage('error', 'Không thể xóa sản phẩm này vì đã có trong đơn hàng. Bạn có thể ẩn sản phẩm thay vì xóa.');
                 redirect(base_url('admin/products'));
                 return;
             }
@@ -266,22 +288,51 @@ class ProductAdminController extends BaseController {
             // Xóa file hình ảnh
             if ($product['image'] && file_exists($product['image'])) {
                 @unlink($product['image']);
+                error_log("Image deleted: " . $product['image']);
             }
             
             // Xóa sản phẩm
+            error_log("Attempting to delete product ID: " . $id);
             $success = $this->productModel->delete($id);
+            error_log("Delete result: " . ($success ? 'Success' : 'Failed'));
             
             if ($success) {
-                $this->setFlashMessage('success', 'Xóa sản phẩm thành công!');
+                $this->setFlashMessage('success', 'Xóa sản phẩm "' . $product['name'] . '" thành công!');
             } else {
-                $this->setFlashMessage('error', 'Không thể xóa sản phẩm');
+                $this->setFlashMessage('error', 'Không thể xóa sản phẩm. Vui lòng thử lại.');
             }
             
         } catch (Exception $e) {
+            error_log("EXCEPTION in delete: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             $this->setFlashMessage('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
         
         redirect(base_url('admin/products'));
+    }
+    
+    /**
+     * Kiểm tra có thể xóa sản phẩm không (không có trong order_items)
+     * @param int $productId
+     * @return bool
+     */
+    private function canDeleteProduct($productId) {
+        try {
+            // Kiểm tra sản phẩm có trong order_items không
+            $db = getDB();
+            $stmt = $db->prepare("SELECT COUNT(*) as total FROM order_items WHERE product_id = ?");
+            $stmt->execute([$productId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            $orderItemsCount = (int)$result['total'];
+            error_log("Product ID $productId references in order_items: $orderItemsCount");
+            
+            return $orderItemsCount === 0;
+            
+        } catch (Exception $e) {
+            error_log("Error checking product references: " . $e->getMessage());
+            return false; // Safer to not allow deletion if we can't check
+        }
     }
     
     /**
@@ -343,7 +394,7 @@ class ProductAdminController extends BaseController {
     /**
      * Xem chi tiết sản phẩm (dành cho admin)
      */
-    public function view($id) {
+    public function viewDetail($id) {  // Đổi tên từ view() thành viewDetail()
         try {
             $product = $this->productModel->getById($id);
             
@@ -358,7 +409,7 @@ class ProductAdminController extends BaseController {
                 'pageTitle' => 'Chi tiết sản phẩm: ' . $product['name']
             ];
             
-            $this->view('admin/products/view', $data);
+            parent::view('admin/products/view', $data);  // Gọi parent::view() để rõ ràng
             
         } catch (Exception $e) {
             $this->setFlashMessage('error', 'Có lỗi xảy ra: ' . $e->getMessage());
