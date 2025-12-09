@@ -61,12 +61,8 @@ $bestSellingProducts = $bestSellingProducts ?? [];
 </section>
 
 <!-- Featured Categories Section -->
-<section id="featured-categories" class="py-5">
+<!-- <section id="featured-categories" class="py-5">
     <div class="container">
-        <div class="section-header text-center mb-5">
-            <h2 class="fw-bold">Danh Mục Nổi Bật</h2>
-            <p class="text-muted">Khám phá các danh mục sản phẩm phổ biến</p>
-        </div>
 
         <div class="row g-4">
             <?php foreach (array_slice($categories, 0, 6) as $category): ?>
@@ -98,7 +94,7 @@ $bestSellingProducts = $bestSellingProducts ?? [];
             <?php endforeach; ?>
         </div>
     </div>
-</section>
+</section> -->
 
 <!-- Latest Products Section -->
 <section class="latest-products py-5 bg-light">

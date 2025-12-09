@@ -52,3 +52,31 @@
     opacity: 0.65;
 }
 
+/* Font size responsive cho navbar menu */
+.navbar-nav .nav-link {
+    font-size: 0.95rem; /* Desktop */
+}
+
+@media (max-width: 1199.98px) {
+    .navbar-nav .nav-link {
+        font-size: 0.9rem; /* Tablet lớn */
+    }
+}
+
+@media (max-width: 991.98px) {
+    .navbar-nav .nav-link {
+        font-size: 0.85rem; /* Tablet */
+    }
+}
+
+@media (max-width: 767.98px) {
+    .navbar-nav .nav-link {
+        font-size: 0.8rem; /* Mobile lớn */
+    }
+}
+
+@media (max-width: 575.98px) {
+    .navbar-nav .nav-link {
+        font-size: 0.75rem; /* Mobile nhỏ */
+    }
+}

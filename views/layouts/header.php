@@ -79,7 +79,7 @@ $pageTitle = $pageTitle ?? 'Mỹ Phẩm Chính Hãng';
 </div>
 
 <!-- Main Navigation -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+<nav class="navbar navbar-expand-xl navbar-light bg-white shadow-sm sticky-top">
     <div class="container">
         <!-- Logo -->
         <a class="navbar-brand fw-bold" href="<?= base_url() ?>">
